@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "start": "parcel index.html --no-autoinstall"
+  },
+  "dependencies": {
+    "immstruct": "^2.0.0",
+    "immutable": "^4.0.0-rc.12",
+    "memoizee": "^0.4.14",
+    "stats.js": "^0.17.0",
+    "three": "^0.108.0"
+  },
+  "devDependencies": {
+    "three-orbitcontrols": "^2.108.1"
+  }
+}
