@@ -1,3 +1,6 @@
-import src from './src/index.js';
-import classes from './main.css';
-src();
+import main from './src/main.js';
+import './main.css';
+
+main(
+  document.getElementById('container')
+);

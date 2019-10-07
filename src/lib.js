@@ -1,50 +1,92 @@
 import * as THREE from 'three';
-import immstruct from "immstruct";
-import { fromJS } from "immutable";
-import memoizee from "memoizee";
+import { fromJS } from 'immutable';
+import memoizee from 'memoizee';
 
 const materials = {
   grey: new THREE.MeshPhongMaterial({ color: 0x202020 }),
   floorMat: new THREE.MeshStandardMaterial({
     roughness: 0.8,
     color: 0xffffff,
-    metalness: 0.2,
-    bumpScale: 0.0005
+    metalness: 0.8,
+    bumpScale: 0.05
+  }),
+  bulbMat: new THREE.MeshStandardMaterial({
+    emissive: 0xffffee,
+    emissiveIntensity: 135,
+    color: 0x000000
   })
 };
 
-const createGeometry = memoizee(
-  (Obj, ...args) => console.log('newGeo', Obj, args) || new Obj(...args),
-  { length: false }
-);
-
-const createMesh = ({
-  geometry = THREE.BoxBufferGeometry,
-  size = [1, 1, 1],
-  material = materials.grey,
-  position,
-  castShadow = true,
-  receiveShadow = false,
-  rotation
-}) => {
-  const mesh = new THREE.Mesh(
-    createGeometry(geometry, ...size),
-    material
-  );
-  mesh.castShadow = castShadow;
-  mesh.receiveShadow = receiveShadow;
-  if (rotation) {
-    mesh.rotation.x = rotation[0] || 0;
-    mesh.rotation.y = rotation[1] || 0;
-    mesh.rotation.z = rotation[2] || 0;
-  }
-  return fromJS({ material, position, mesh, rotation });
+// object[key].x/y/z = [x, y, z]
+const assignVector3 = (object, key, vector = []) => {
+  const [x = 0, y = 0, z = 0] = vector;
+  Object.assign(object[key], { x, y, z });
+  return object;
 };
 
-const structure = immstruct({});
+// Create a brand new object
+const createUniqObject = (Primitive, params = [], opts = {}, bulbLight) => {
+  const object = new Primitive(...params);
+  Object.assign(object, opts);
+  return object;
+};
+
+// Create a memoized object (i.e. for a mesh)
+const createObject = memoizee(createUniqObject, { length: false });
+
+// Add an entity from an immutable map to a scene
+const addEntity = scene => i => {
+  scene.add(i.get('object'));
+  updateEntity(i);
+};
+
+// Apply changes from an immutable map to the entity within
+const updateEntity = i => {
+  const { object, position, rotation } = i.toJS();
+  if (rotation) assignVector3(object, 'rotation', rotation);
+  if (position) assignVector3(object, 'position', position);
+};
+
+// Create a threejs object and return ImmutableJS map referencing it
+const create = args => {
+  const {
+    isMesh = true,
+    primitive,
+    params,
+    material = materials.grey,
+    position,
+    rotation,
+    add,
+    ...opts
+  } = args;
+  console.log(args);
+  const options = {
+    castShadow: true,
+    receiveShadow: true,
+    ...opts
+  };
+  const object = (() => {
+    if (!isMesh) return createUniqObject(primitive, params, opts);
+    return Object.assign(
+      new THREE.Mesh(createObject(primitive, params), material),
+      options
+    );
+  })();
+  if (add) object.add(add); // hack for bulblight
+  const entity = fromJS({ ...args, ...options, object });
+  return entity;
+};
+
+const handler = scene => (state, oldState, path) => {
+  const { length } = path;
+  if (length === 0) return state.map(addEntity(scene));
+  if (length === 1 && !oldState.hasIn(path)) return addEntity(scene)(state);
+  const entity = state.get(path[0]);
+  updateEntity(entity);
+};
 
 export {
- materials,
- createMesh,
- structure
+  materials,
+  create,
+  handler
 };

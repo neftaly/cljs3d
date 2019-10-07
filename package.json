@@ -3,11 +3,12 @@
     "start": "parcel index.html --no-autoinstall"
   },
   "dependencies": {
-    "immstruct": "^2.0.0",
     "immutable": "^4.0.0-rc.12",
+    "immutable-cursor": "^2.0.1",
     "memoizee": "^0.4.14",
+    "raf": "^3.4.1",
     "stats.js": "^0.17.0",
-    "three": "^0.108.0"
+    "three": "^0.109.0"
   },
   "devDependencies": {
     "three-orbitcontrols": "^2.108.1"
